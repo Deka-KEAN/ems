@@ -7,19 +7,20 @@ const { Employee } = require("../database/db");
 const { authentication } = require("../middleware/middleware");
 const multer = require('multer');
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const storage = multer.diskStorage({
+    destination:"uploads",
+    filename : (req,file,cb)=>{
+        cb(null, file.originalname)
+    }
+});
+const upload = multer({ storage: storage }).single('image');
 
 const employeeSchema= zod.object({
     empId: zod.string(),
-    firstName : zod.string(),
+    fullName : zod.string(),
     emailId : zod.string(),
     jobRole: zod.string()
-});
-const signinSchema= zod.object({
-    username: zod.string(),
-    firstName : zod.string(),
-});
+}).strict();
 
 
 employeeRouter.get("/checking",(req,res)=>{
@@ -32,97 +33,89 @@ employeeRouter.get("/show",authentication,async (req,res)=>{
     res.json(getAllUser);
 });
 
-employeeRouter.post("/add", authentication,async (req,res)=>{
-    const data=req.body;
-    // console.log(data);
-    const checking=employeeSchema.safeParse(data);
-    if(!checking){
-        console.log(checking);
-        return res.status(400).json({
-            message : "Incorrect inputs"
-        })
-    }
-    const empId=req.body.empId;
-    const fullName=req.body.fullName;
-    const emailId=req.body.emailId;
-    const jobRole=req.body.jobRole;
-    const image= req.body.img || "no image";
-    console.log(image);
-    const find= await Employee.findOne({
-        empId
-    });
-    if(find && find._id){
-        console.log("checkin");
-        return res.status(411).json({
-            message : "Employee Already Exists"
-        });
-    }
+employeeRouter.post("/add",authentication,async (req,res)=>{
+    upload(req,res,async (err)=>{
+        if(err){
+            console.log(err);
+        }else{
+            const data=req.body;
+            const checking=employeeSchema.safeParse(data);
+            if(!checking.success){
+                return res.status(400).json({
+                    message: "Incorrect inputs"
+                })
+            }
+            console.log("Data post : ",data);
 
-    const createdUser=await Employee.create({
-        empId,
-        fullName,
-        emailId,
-        jobRole,
-        image
-    });
-    // res.json(createdUser);
-    res.json({
-        message: "Employee added successfully"
+            const find= await Employee.findOne({
+                empId:req.body.empId
+            });
+            if(find && find._id){
+                console.log("checkin");
+                return res.status(411).json({
+                    message : "Employee Already Exists"
+                });
+            }
+            const dataUpload= new Employee({
+                empId:req.body.empId,
+                fullName:req.body.fullName,
+                emailId:req.body.emailId,
+                jobRole:req.body.jobRole,
+                image: {
+                    data: req.file.filename,
+                    contentType: "image/png"
+                }
+            });
+            await dataUpload.save().then(()=> res.json({
+                message: "Employee added successfully"
+            })).catch(err =>{
+                console.log(err);
+                res.json({
+                    message: "Error occurred while uploading"
+                })
+            });
+        }
     });
 });
 
-employeeRouter.put("/update", authentication, upload.single('file'), async (req,res)=>{
-    // const data=req.body;
-    // const success=employeeSchema.safeParse(data);
-    // if(!success){
-    //     return res.status(400).json({
-    //         message: "Incorrect inputs"
-    //     })
-    // }
-    // const empId=req.body.empId;
-    // const fullName=req.body.fullName;
-    // const emailId=req.body.emailId;
-    // const jobRole=req.body.jobRole;
-    console.log(req.body);
-    
-    const {empId,fullName,emailId,jobRole} = req.body;
-    const file = req.file;
-    console.log(empId);
-    try {
-        console.log("hello",req.file);
-        const findUser=await Employee.findOne({empId});
-        const imageBuffer = Buffer.from(req.body.image, 'base64');
-        console.log(imageBuffer);
-        const newData = {
-            empId,
-            fullName,
-            emailId,
-            jobRole,
-            image: imageBuffer.toString('base64')
-        };
-        await Employee.updateOne(
-        {
-            _id:req.body._id
-        },newData);
-        res.json({
-            message: "Employee Updated Successfully!"
-        });
-    }
-    // if(findUser._id){
-    //     const userId=findUser._id;
-    //     const token=jwt.sign({
-    //         userId
-    //     },JWT_SECRET);
-    //     return res.json({
-    //         token : token
-    //     });
-    // }
-    catch(err){
-        console.log(err);
-        res.status(411).json({
-            message: "Error while logging in"
-        });
-    }
+employeeRouter.put("/update/:id",authentication,async (req,res)=>{
+    upload(req,res,async (err)=>{
+        if(err){
+            console.log(err);
+        }else{
+            const data=req.body;
+            console.log("Data put : ",data);
+            console.log(req.params.id);
+            const dataUpload= {
+                empId:req.body.empId,
+                fullName:req.body.fullName,
+                emailId:req.body.emailId,
+                jobRole:req.body.jobRole,
+                image: {
+                    data: req.file.filename,
+                    contentType: "image/png"
+                }
+            };
+            const find= await Employee.findOne({
+                _id:req.params.id
+            });
+            console.log("Find : ",find);
+            
+            try{
+                await Employee.updateOne(
+                {
+                    _id:req.params.id
+                } , dataUpload);
+            }catch(err){
+                res.json({
+                    message: "Error occured while updating employee details"
+                })
+            }
+        }
+    });
+    res.json({
+        message: "Employee updated successfully"
+    });
 });
 
 employeeRouter.delete("/remove",authentication, async (req,res)=>{

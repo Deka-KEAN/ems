@@ -23,7 +23,10 @@ const EmployeeSchema= new Schema({
     fullName : String,
     emailId : String,
     jobRole : String,
-    image : String
+    image : {
+        data:Buffer,
+        contentType: String
+    }
 });
 
 
