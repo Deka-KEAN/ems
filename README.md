@@ -7,14 +7,15 @@ Inside frontend directory
 - npm install
 - npm run dev
   
-This is run the application.
+This will run the frontend application.
 
 # Backend
 
 Inside backend directory
 - npm install
 - node index.js
-This is run the backend server
+  
+This will run the backend server
 
 ## APIs : 
 - POST - /manage/api/signup - Checks if user already exists if not then add a new in database and returns a jwt authentication token
