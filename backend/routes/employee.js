@@ -23,9 +23,9 @@ const employeeSchema= zod.object({
 }).strict();
 
 
-employeeRouter.get("/checking",(req,res)=>{
+employeeRouter.get("/checking",authentication,(req,res)=>{
     console.log("hello");
-    res.json("Hello");
+    res.json("checking");
 });
 
 employeeRouter.get("/show",authentication,async (req,res)=>{

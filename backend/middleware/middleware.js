@@ -14,12 +14,12 @@ const authentication = (req,res,next) =>{
     try{
         const verified=jwt.verify(token,JWT_SECRET);
         // console.log(verified);
-        if(verified.userId){
-            req.userId=verified.userId;
+        if(verified){
             next();
         }else{
-            
-            return res.status(403).json({});
+            return res.status(403).json({
+                jwt:"Incorrect JWT token"
+            });
         }
     }catch(err){
         console.log("err");
