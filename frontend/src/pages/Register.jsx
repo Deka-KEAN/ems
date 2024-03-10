@@ -8,7 +8,20 @@ export function Register(){
     const [username,setUserName]=useState("");
     const [email,setEmail]=useState("");
     const [password,setPassword]=useState("");
-
+    async function handleClick(e){
+        e.preventDefault();
+        navigate("/employee-dashboard");
+        const response= await axios.post(`http://localhost:3000/manage/api/signup`,{
+            username,
+            email,
+            password
+        });
+        
+        console.log(response);
+        localStorage.setItem("response-token",response.data.token);
+        console.log(response.data.token);
+        
+    }
     return (
         <div>
             <h1>Register User</h1>
@@ -28,20 +41,7 @@ export function Register(){
                 </div>
                 <div>Already have an account click <Link to="/login" element={<Login/>}>here.</Link></div>
                 <div>
-                    <button onClick={async (e)=>{
-                            e.preventDefault();
-                            const response= await axios.post(`http://localhost:3000/manage/api/signup`,{
-                                username,
-                                email,
-                                password
-                            });
-                            
-                            console.log(response);
-                            localStorage.setItem("response-token",response.data.token);
-                            console.log(response.data.token);
-                            navigate("/login");
-                        }}
-                        type="submit" >
+                    <button onClick={handleClick} type="submit" >
                         Register new account
                     </button>
                 </div>
